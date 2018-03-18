@@ -123,7 +123,7 @@ We use the distance metric to calculate a *distance matrix*, which gives a sense
 
 ```{r, echo=FALSE}
 shinyAppDir(
-  system.file("apps/01_distance", package="visualIntroClustering"),
+  system.file("apps/01_distances", package="visualIntroClustering"),
   options= list(height=600)
 )
 ```
@@ -258,7 +258,7 @@ Note the species of each row is represented by a color. What happens to the clus
 
 Try tracking the membership of a pair of irises (for example 121 and 113) and see whether they stay in the same cluster as you add more and more noise.
 
-```{r, echo=FALSE,warning=FALSE, message=FALSE}
+```{r, echo=FALSE,warning=FALSE, message=FALSE, eval=FALSE}
 ###want dataset with slider
 ###increase amplitude (range of noise) via multiplier?
 ###maybe add filtering parameter?
