@@ -8,81 +8,101 @@ runtime: shiny_prerendered
 ```{r setup, include=FALSE}
 library(learnr)
 knitr::opts_chunk$set(echo = FALSE)
+library(shiny)
+library(plotly)
+require(shiny)
+require(dplyr)
+require(ggvis)
+require(reshape2)
+require(fpc)
 ```
 
-
-## Topic 1
-
-### Exercise 
-
-*Here's a simple exercise with an empty code chunk provided for entering the answer.*
-
-Write the R code required to add two plus two:
-
-```{r two-plus-two, exercise=TRUE}
+```{r context="server"}
+data(iris)
 
 ```
 
-### Exercise with Code
+## Clustering 1
 
-*Here's an exercise with some prepopulated code as well as `exercise.lines = 5` to provide a bit more initial room to work.*
-
-Now write a function that adds any two numbers and then call it:
-
-```{r add-function, exercise=TRUE, exercise.lines = 5}
-add <- function() {
-  
-}
-```
-
-## Topic 2
-
-### Exercise with Hint
-
-*Here's an exercise where the chunk is pre-evaulated via the `exercise.eval` option (so the user can see the default output we'd like them to customize). We also add a "hint" to the correct solution via the chunk immediate below labeled `print-limit-hint`.*
-
-Modify the following code to limit the number of rows printed to 5:
-
-```{r print-limit, exercise=TRUE, exercise.eval=TRUE}
-mtcars
-```
-
-```{r print-limit-hint}
-head(mtcars)
-```
-
-### Quiz
-
-*You can include any number of single or multiple choice questions as a quiz. Use the `question` function to define a question and the `quiz` function for grouping multiple questions together.*
-
-Some questions to verify that you understand the purposes of various base and recommended R packages:
-
-```{r quiz}
-quiz(
-  question("Which package contains functions for installing other R packages?",
-    answer("base"),
-    answer("tools"),
-    answer("utils", correct = TRUE),
-    answer("codetools")
-  ),
-  question("Which of the R packages listed below are used to create plots?",
-    answer("lattice", correct = TRUE),
-    answer("tools"),
-    answer("stats"),
-    answer("grid", correct = TRUE)
-  )
-)
-```
-
-## What is Clustering?
+### What is Clustering?
 
 Clustering is a method for finding groupings in data. 
 
-The data must be at least ordinal (categorical or continuous, but with some implied order) and in matrix format. The data does not all have to be the same type (you can mix continuous and categorical)
+The data must be at least *ordinal* (categorical or continuous, but with some implied order) and in matrix format. The data does not all have to be the same type (you can mix continuous and categorical)
 
 For example, if we had data from a survey on a Likert scale from a number of participants. We could represent the data with questions on the rows and participants as columns. So a column would represent the answers for a single participant, and a row would represent a question's answers for all participants.
 
 We could cluster on questions (resulting in groupings of questions), or on participants (resulting in groupings of participants).
+
+### Distance Metrics
+
+The first choice you must make in using a clustering algorithm is choosing your *distance metric*. This is critical, because it determines what qualities of your data. 
+
+We'll talk about two distance metrics: *Euclidean* and *Correlation* (Non parametric distance metrics are also potentially interesting, including rank-based (spearman's) correlation). Correlation-based clustering basically looks at shape, but ignores magnitude. Euclidean distance ignores shape, but considers magnitude. Let's explore the difference between them. Which two profiles are the closest in terms of euclidean distance? Which two profiles are closest in terms of correlation?
+
+We use the distance metric to calculate a *distance matrix*, which gives a sense for how 'close' two profiles are in your data. The [ith,jth] entry in the distance matrix gives the distance between profile *i* and profile *j* in your data. (Note the distance matrix is symmetric about the diagonal, so [i,j] == [j,i], and that [i,i] == 0). 
+
+
+```{r}
+methods = c("none"="percent", "row"="zscore", "column"="zscore2")
+selectInput("num_rows", "select number of rows to show", choices= 1:3, selected=1)
+selectInput("scaling", "select scaling method", choices=methods, selected=methods[1])
+plotlyOutput("clust_plot1",height = "25%")
+plotlyOutput("clust_plot2", height="25%")
+```
+
+
+```{r context="server"}
+library(shiny)
+library(tidyverse)
+#TODO: line plot where points are colored by scaling
+
+library(gplots)
+library(cluster.datasets)
+library(plotly)
+data("european.foods")
+ef <- european.foods[,-c(1,2)]
+rownames(ef) <- make.names(european.foods$name)
+colnames(ef) <- c("WestGermany", "Italy", "France", "Netherlands", "Belgium",
+                  "Luxembourg", "Great Britain", "Portugal", "Austria", "Switzerland",
+                  "Sweden", "Denmark", "Norway", "Finland", "Spain", "Ireland")
+
+ef[2,] <- ef[2,]/2
+ef[3,] <- ef[2,]/5
+
+food_names <- rownames(ef)
+
+ef2 <- data.frame(foods=rownames(ef),ef)
+
+scale_this <- function(x){ as.vector(scale(x))}
+
+library(cowplot)
+
+ef_long <- ef2 %>% tidyr::gather(key = "country", value="percent", -foods) %>%
+  group_by(foods) %>% mutate(zscore=scale_this(percent)) %>% ungroup() %>% group_by(country) %>%
+  mutate(zscore2=scale_this(percent)) %>% ungroup()
+
+ ef_long_data <- reactive({
+    subset <- food_names[1:input$num_rows]
+    ef_long %>% filter(foods %in% subset)
+
+  })
+
+  output$clust_plot1 <- renderPlotly({
+    out_graph <- ef_long_data() %>% #dplyr::filter(foods %in% c("ground.coffee", "instant.coffee")) %>%
+      ggplot(aes_string(x="country", y="percent", group="foods")) + geom_line() + geom_point(aes_string(color=input$scaling), size=5, shape=15) +
+      scale_color_distiller(type="div") + theme(axis.text.x = element_blank(), axis.text.y = element_blank())
+    out_graph %>% ggplotly()
+  })
+
+  output$clust_plot2 <- renderPlotly({
+    out_graph2 <- ef_long_data() %>% #dplyr::filter(foods %in% c("ground.coffee", "instant.coffee")) %>%
+      ggplot(aes_string(x="country", y="foods", fill=input$scaling)) + geom_tile(color="black", linetype=2) + scale_fill_distiller(type="div") +
+      theme(axis.text.y = element_blank(), axis.text.x = element_text(angle=90))
+
+    out_graph2 %>% ggplotly()
+  })
+```
 
 ##Clustering Caveats
 
@@ -121,11 +141,17 @@ We'll talk about two distance metrics: *Euclidean* and *Correlation* (Non parame
 
 We use the distance metric to calculate a *distance matrix*, which gives a sense for how 'close' two profiles are in your data. The [ith,jth] entry in the distance matrix gives the distance between profile *i* and profile *j* in your data. (Note the distance matrix is symmetric about the diagonal, so [i,j] == [j,i], and that [i,i] == 0). 
 
-```{r, echo=FALSE}
-shinyAppDir(
-  system.file("apps/01_distances", package="visualIntroClustering"),
-  options= list(height=600)
-)
+```{r}
+#shinyAppDir(
+  source(system.file("apps/08_test/ui.R", package="visualIntroClustering"),local = TRUE)
+  #app_01()
+
+#  options= list(height=600)
+#)
+```
+
+```{r, context="server"}
+source(system.file("apps/08_test/server.R", package="visualIntroClustering"),local = TRUE)
 ```
 
 ## Trees versus Partitional Methods

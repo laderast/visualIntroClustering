@@ -12,17 +12,18 @@ library(shiny)
 library(reshape2)
 library(ggplot2)
 
-timeP <- c(0,10,20,30)
-exampleData <- data.frame(time=timeP, profile1 = (3 * (sin(timeP) + 1 + 3)),
-                          profile2 = (0.5*sin(timeP)+1),
-                          profile3 = c(1.4, 1.2, 1.1, 0.5))
-exMelt <- melt(exampleData, id.vars="time")
 
-corDist <- function(x) as.dist(1-cor(t(x)))
+  timeP <- c(0,10,20,30)
+  exampleData <- data.frame(time=timeP, profile1 = (3 * (sin(timeP) + 1 + 3)),
+                            profile2 = (0.5*sin(timeP)+1),
+                            profile3 = c(1.4, 1.2, 1.1, 0.5))
+  exMelt <- melt(exampleData, id.vars="time")
 
-#calculate the two different distance matrices
-eucMat <- as.matrix(dist(t(exampleData[,-1])))
-corMat <- as.matrix(corDist(t(exampleData[,-1])))
+  corDist <- function(x) as.dist(1-cor(t(x)))
+
+  #calculate the two different distance matrices
+  eucMat <- as.matrix(dist(t(exampleData[,-1])))
+  corMat <- as.matrix(corDist(t(exampleData[,-1])))
 
 
   ui <- fluidPage(
@@ -50,5 +51,7 @@ corMat <- as.matrix(corDist(t(exampleData[,-1])))
   }
 
 
-shinyApp(ui = ui, server = server)
+  shinyApp(ui = ui, server = server)
+
+
 

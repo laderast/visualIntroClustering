@@ -63,7 +63,7 @@ server <- function(input, output){
 
   output$clust_plot2 <- renderPlotly({
     out_graph2 <- ef_long_data() %>% #dplyr::filter(foods %in% c("ground.coffee", "instant.coffee")) %>%
-      ggplot(aes_string(x="country", y="foods", fill=input$scaling)) + geom_tile() + scale_fill_distiller(type="div") +
+      ggplot(aes_string(x="country", y="foods", fill=input$scaling)) + geom_tile(color="black", linetype=1) + scale_fill_distiller(type="div") +
       theme(axis.text.y = element_blank(), axis.text.x = element_text(angle=90))
 
     out_graph2 %>% ggplotly()
